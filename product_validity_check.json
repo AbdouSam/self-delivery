@@ -1,0 +1,265 @@
+{
+  "ruleChain": {
+    "additionalInfo": null,
+    "name": "Product Validity Check",
+    "firstRuleNodeId": null,
+    "root": false,
+    "debugMode": false,
+    "configuration": null
+  },
+  "metadata": {
+    "firstNodeIndex": 3,
+    "nodes": [
+      {
+        "additionalInfo": {
+          "layoutX": 589,
+          "layoutY": 150
+        },
+        "type": "org.thingsboard.rule.engine.metadata.TbGetRelatedAttributeNode",
+        "name": "Get Product key",
+        "debugMode": false,
+        "configuration": {
+          "attrMapping": {
+            "productKeys": "product_keys",
+            "boxIDs": "box_ids"
+          },
+          "relationsQuery": {
+            "direction": "TO",
+            "maxLevel": 1,
+            "filters": [
+              {
+                "relationType": "Contains",
+                "entityTypes": [
+                  "ASSET"
+                ]
+              }
+            ]
+          },
+          "telemetry": false
+        }
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 621,
+          "layoutY": 321
+        },
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "Check key valid",
+        "debugMode": false,
+        "configuration": {
+          "jsScript": "var newMsg = {};\n\nvar product_keys = {};\nvar box_ids = {};\n\n//remove white spaces\nproduct_keys = metadata.product_keys.replace(/\\s/g, '');\nbox_ids = metadata.box_ids.replace(/\\s/g, '');\n\n//split keys\nproduct_keys = product_keys.split(\",\");\nbox_ids = box_ids.split(\",\");\n\n\n//Product are organized as 0 : id , 1 : pass\nvar keys = {};\n\nvar i;\n\nfor(i = 0; i< product_keys.length; i++)\n{\n    keys[i] = product_keys[i].split(\"&\");\n    //check for the pass\n    if (msg.params.pass == keys[i][1])\n    {\n        //pass exist\n        if(msg.params.id == keys[i][0])\n        {\n            //correct\n            newMsg.response = \"Valid\";\n            newMsg.box_id   = box_ids[i];\n        }\n        else\n        {\n            //wrong id\n            newMsg.response = \"Wrong ID\";\n            newMsg.box_id   = \"0\";\n        }\n        break;\n    }\n    else\n    {\n        newMsg.response = \"Wrong Pass\";\n        newMsg.box_id   = \"0\";\n    }\n}\n\nreturn {msg: newMsg, metadata: metadata, msgType: msgType};"
+        }
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 681,
+          "layoutY": 445
+        },
+        "type": "org.thingsboard.rule.engine.rpc.TbSendRPCReplyNode",
+        "name": "Reply Product valid",
+        "debugMode": false,
+        "configuration": {
+          "requestIdMetaDataAttribute": "requestId"
+        }
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 255,
+          "layoutY": 160
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsSwitchNode",
+        "name": "Switch Product Delivrer",
+        "debugMode": true,
+        "configuration": {
+          "jsScript": "if(msg.method == \"checkDelivery\")\n{\n    return 'Product';\n}\nelse if(msg.method == \"checkLivreur\")\n{\n    return \"Livreur\";\n}\nelse if(msg.method == \"updateDelivery\")\n{\n    return \"UpdateP\";\n}\nelse if(msg.method == \"updateDeposit\")\n{\n    return \"UpdateL\"\n}\nelse\n{\n    return \"none\";\n}"
+        }
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 302,
+          "layoutY": 313
+        },
+        "type": "org.thingsboard.rule.engine.metadata.TbGetRelatedAttributeNode",
+        "name": "Get Livreur key",
+        "debugMode": false,
+        "configuration": {
+          "attrMapping": {
+            "livreurKeys": "livreur_keys"
+          },
+          "relationsQuery": {
+            "direction": "TO",
+            "maxLevel": 1,
+            "filters": [
+              {
+                "relationType": "Contains",
+                "entityTypes": [
+                  "ASSET"
+                ]
+              }
+            ]
+          },
+          "telemetry": false
+        }
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 301,
+          "layoutY": 426
+        },
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "Check deliverer key",
+        "debugMode": false,
+        "configuration": {
+          "jsScript": "var newMsg = {};\r\n\r\nvar livreur_keys = {};\r\n\r\n//remove white spaces\r\nlivreur_keys = metadata.livreur_keys.replace(/\\s/g, '');\r\n\r\n//split keys\r\nlivreur_keys = livreur_keys.split(\",\");\r\n\r\n\r\nvar keys = {};\r\n\r\nvar i;\r\n\r\nfor(i = 0; i< livreur_keys.length; i++)\r\n{\r\n    //check for the pass\r\n    if (msg.params.pass == livreur_keys[i])\r\n    {\r\n    \r\n        newMsg.response = \"Valid\";\r\n        break;\r\n    }\r\n    else\r\n    {\r\n        newMsg.response = \"Invalid\";\r\n    }\r\n}\r\n\r\nreturn {msg: newMsg, metadata: metadata, msgType: msgType};"
+        }
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 417,
+          "layoutY": 542
+        },
+        "type": "org.thingsboard.rule.engine.rpc.TbSendRPCReplyNode",
+        "name": "Reply Delivery valid",
+        "debugMode": false,
+        "configuration": {
+          "requestIdMetaDataAttribute": "requestId"
+        }
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 69,
+          "layoutY": 459
+        },
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "Unknown method",
+        "debugMode": false,
+        "configuration": {
+          "jsScript": "var newMsg = {};\n\nnewMsg.valid = 'Unknown method';\nreturn {msg: newMsg, metadata: metadata, msgType: msgType};"
+        }
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 84,
+          "layoutY": 591
+        },
+        "type": "org.thingsboard.rule.engine.rpc.TbSendRPCReplyNode",
+        "name": "Reply unknown method",
+        "debugMode": false,
+        "configuration": {
+          "requestIdMetaDataAttribute": "requestId"
+        }
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 456,
+          "layoutY": 10
+        },
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "Update Product",
+        "debugMode": false,
+        "configuration": {
+          "jsScript": "var newMsg = {\"response\" : \"OK\"};\n\nreturn {msg: newMsg, metadata: metadata, msgType: msgType};"
+        }
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 544,
+          "layoutY": 88
+        },
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "Update Livreur",
+        "debugMode": false,
+        "configuration": {
+          "jsScript": "var newMsg = {\"response\" : \"OK\"};\n\nreturn {msg: newMsg, metadata: metadata, msgType: msgType};"
+        }
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 746,
+          "layoutY": 12
+        },
+        "type": "org.thingsboard.rule.engine.rpc.TbSendRPCReplyNode",
+        "name": "Update product success",
+        "debugMode": false,
+        "configuration": {
+          "requestIdMetaDataAttribute": "requestId"
+        }
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 814,
+          "layoutY": 84
+        },
+        "type": "org.thingsboard.rule.engine.rpc.TbSendRPCReplyNode",
+        "name": "Update livreur sucess",
+        "debugMode": false,
+        "configuration": {
+          "requestIdMetaDataAttribute": "requestId"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "fromIndex": 0,
+        "toIndex": 1,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 2,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 4,
+        "type": "Livreur"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 0,
+        "type": "Product"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 10,
+        "type": "UpdateL"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 9,
+        "type": "UpdateP"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 7,
+        "type": "none"
+      },
+      {
+        "fromIndex": 4,
+        "toIndex": 5,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 5,
+        "toIndex": 6,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 7,
+        "toIndex": 8,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 9,
+        "toIndex": 11,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 10,
+        "toIndex": 12,
+        "type": "Success"
+      }
+    ],
+    "ruleChainConnections": null
+  }
+}
