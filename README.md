@@ -1,5 +1,5 @@
 # self-delivery
-This repo contains the code for the Rasbperry Pi 3 model B.
+This repo contains the code for the Rasbperry Pi 3 model B. Connecting to thingsbord through Rule chain.
 
 ***Written and tested in Python 3.6.6***
 **Notes**
